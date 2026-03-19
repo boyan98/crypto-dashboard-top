@@ -445,7 +445,6 @@ st.markdown("""
         display: grid;
         grid-template-columns: repeat(5, 1fr);
         gap: 0.65rem;
-        grid-template-rows: auto auto;
     }
     .perf-card {
         background: #080c14;
@@ -2140,29 +2139,19 @@ def render_dca_tab():
         st.error(f"Error running DCA simulation: {e}")
 
 
-def render_top_performers(coins, timeframe):
-    """Render the top 5 performers for a given timeframe key."""
-    tf_key_map = {
-        "1h":  "price_change_percentage_1h_in_currency",
-        "24h": "price_change_percentage_24h_in_currency",
-        "7d":  "price_change_percentage_7d_in_currency",
-        "30d": "price_change_percentage_30d_in_currency",
-    }
-    key = tf_key_map[timeframe]
-
-    # Filter coins that have data for this timeframe and sort by change desc
+def render_top_performers(coins):
+    """Render the top 5 performers for the past 24 hours."""
+    key   = "price_change_percentage_24h_in_currency"
     valid = [c for c in coins if c.get(key) is not None]
-    top10 = sorted(valid, key=lambda c: c[key], reverse=True)[:10]
+    top5  = sorted(valid, key=lambda c: c[key], reverse=True)[:5]
 
-    if not top10:
+    if not top5:
         st.markdown('<div class="small-note">No data available.</div>', unsafe_allow_html=True)
         return
 
-    # Determine bar width scale (relative to the largest mover)
-    max_abs = max(abs(c[key]) for c in top10) or 1
-
+    max_abs    = max(abs(c[key]) for c in top5) or 1
     cards_html = ""
-    for i, coin in enumerate(top10):
+    for i, coin in enumerate(top5):
         pct       = coin[key]
         sym       = coin["symbol"].upper()
         name      = coin["name"]
@@ -2170,17 +2159,16 @@ def render_top_performers(coins, timeframe):
         sign      = "pos" if pct >= 0 else "neg"
         arrow     = "▲" if pct >= 0 else "▼"
         bar_w     = min(int(abs(pct) / max_abs * 100), 100)
-
-        cards_html += f"""
-        <div class="perf-card">
-            <div class="perf-card-rank">#{i+1}</div>
-            <div class="perf-card-sym">{sym}</div>
-            <div class="perf-card-name">{name}</div>
-            <div class="perf-card-price">{price_str}</div>
-            <div class="perf-card-pct {sign}">{arrow} {abs(pct):.2f}%</div>
-            <div class="perf-card-bar {sign}" style="width:{bar_w}%;"></div>
-        </div>"""
-
+        cards_html += (
+            f'<div class="perf-card">'
+            f'<div class="perf-card-rank">#{i+1}</div>'
+            f'<div class="perf-card-sym">{sym}</div>'
+            f'<div class="perf-card-name">{name}</div>'
+            f'<div class="perf-card-price">{price_str}</div>'
+            f'<div class="perf-card-pct {sign}">{arrow} {abs(pct):.2f}%</div>'
+            f'<div class="perf-card-bar {sign}" style="width:{bar_w}%;"></div>'
+            f'</div>'
+        )
     st.markdown(f'<div class="perf-grid">{cards_html}</div>', unsafe_allow_html=True)
 
 
@@ -2212,26 +2200,9 @@ with tab_dashboard:
     except Exception:
         pass
     if top_coins:
-        tf_options  = ["1h", "24h", "7d", "30d"]
-        tf_labels   = {"1h": "1 Hour", "24h": "24 Hours", "7d": "7 Days", "30d": "30 Days"}
-
         st.markdown('<div class="top-perf-wrap">', unsafe_allow_html=True)
-
-        th_left, th_right = st.columns([3, 2])
-        with th_left:
-            st.markdown('<div class="top-perf-title">🏆 Top Performers</div>', unsafe_allow_html=True)
-        with th_right:
-            selected_tf = st.radio(
-                "Timeframe",
-                options=tf_options,
-                format_func=lambda x: tf_labels[x],
-                index=1,
-                horizontal=True,
-                key="top_perf_tf",
-                label_visibility="collapsed",
-            )
-
-        render_top_performers(top_coins, selected_tf)
+        st.markdown('<div class="top-perf-title">🏆 Top Performers &nbsp;·&nbsp; 24h</div>', unsafe_allow_html=True)
+        render_top_performers(top_coins)
         st.markdown('</div>', unsafe_allow_html=True)
 
     # ── Top Gainers (24h) ─────────────────────────────────────────────────
