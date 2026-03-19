@@ -2206,6 +2206,11 @@ with tab_dashboard:
 
     # ── Top Performers ────────────────────────────────────────────────────
     top_coins = get_top_performers()
+    # Pre-warm BTC daily data — most common coin, reuses 6h cache on all subsequent tab visits
+    try:
+        get_daily_data("bitcoin")
+    except Exception:
+        pass
     if top_coins:
         tf_options  = ["1h", "24h", "7d", "30d"]
         tf_labels   = {"1h": "1 Hour", "24h": "24 Hours", "7d": "7 Days", "30d": "30 Days"}
